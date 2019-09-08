@@ -1,5 +1,7 @@
 /mockups
 /node_modules
+/data
+!/data/*.py
 
 npm-debug.log*
 yarn-debug.log*
