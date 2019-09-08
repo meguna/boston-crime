@@ -1,0 +1,18 @@
+{
+  "name": "crimes-in-boston",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "shapefile": "^0.6.6"
+  },
+  "devDependencies": {
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.8"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
