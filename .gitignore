@@ -1,6 +1,6 @@
 /mockups
 /node_modules
-/data
+/data/*
 !/data/*.py
 
 npm-debug.log*

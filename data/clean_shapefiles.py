@@ -1,6 +1,6 @@
 import pandas as pd
 import geopandas as gp
-import matplotlib.pyplot as plt
+from constants import MA_STATE_PROJECTION
 
 pd.set_option('display.max_columns', None)
 
@@ -35,28 +35,29 @@ del bos['SqMiles']
 del bos['ShapeSTAre']
 del bos['ShapeSTLen']
 
-MA_STATE_PROJECTION = '+proj=lcc +lat_1=41.71666666666667 +lat_2=42.68333333333333 +lat_0=41 +lon_0=-71.5 +x_0=200000 +y_0=750000.0000000001 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs'
 
 # assign same projection before merge
-ma = ma.to_crs(MA_STATE_PROJECTION)
-bos = bos.to_crs(MA_STATE_PROJECTION)
+ma = ma.to_crs(epsg=4326)
+bos = bos.to_crs(epsg=4326)
 
 # merge
 ma_with_bos = gp.overlay(bos, ma, how='union')
 
+print(ma_with_bos.head(20))
+
 # due to slight differences in topology and the merge function, some
 # boston neighborhoods get assigned to non-Boston towns. Fix this error
 def set_town(row):
-    if row['Name'] is None:
-        return row['TOWN']
-    else:
+    if pd.isna(row['TOWN']):
         return bosTownName
+    else:
+        return row['TOWN']
 
 def set_pop(row):
-    if row['Name'] is None:
-        return row['POP2010']
-    else:
+    if pd.isna(row['POP2010']):
         return bosPopl
+    else:
+        return row['POP2010']
 
 ma_with_bos = ma_with_bos.assign(TOWN=ma_with_bos.apply(set_town, axis=1))
 ma_with_bos = ma_with_bos.assign(POP2010=ma_with_bos.apply(set_pop, axis=1))
@@ -64,6 +65,6 @@ ma_with_bos = ma_with_bos.assign(POP2010=ma_with_bos.apply(set_pop, axis=1))
 # rename column
 ma_with_bos = ma_with_bos.rename(columns={'name': 'bosSubNb'})
 
-print(ma_with_bos.head())
+print(ma_with_bos.head(20))
 
 ma_with_bos.to_file('./out/mabos.shp')
