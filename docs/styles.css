@@ -3,6 +3,10 @@
   src: url('./Brown-Regular.woff') format('woff');
   font-weight: 300;
 }
+canvas {
+	width: 100vw;
+	height: 100vh;
+}
 .main-header {
 	overflow-x: hidden;
 	font-family: 'Brown', sans-serif;

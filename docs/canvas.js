@@ -14,15 +14,13 @@ let geoJsonMap = {}, p1dots1000 = {}, p2dots1000 = {}, crimeAll = {},
 
 /* dummy DOM nodes used to listen for changes */
 const detachedContainer = document.createElement('custom');
-const dataContainer = d3.select('#main');
+const dataContainer = d3.select(detachedContainer);
 
 /* set up D3 geo params */
-canvas.height = window.innerHeight;
-canvas.width = window.innerWidth;
 const projection = d3
   .geoMercator()
-  .center([-71.057083, 42.361145])
-  .translate([canvas.width / 3, canvas.height / 3])
+  .center([-71.052483, 42.329706])
+  .translate([canvas.width / 5, canvas.height / 4])
   .scale(200000);
 
 const geoPathGenerator = d3
@@ -53,24 +51,16 @@ d3.csv('clustered_crime_data_p1_1000.csv')
 d3.csv('clustered_crime_data_p2_5000.csv')
     .then((p2dots) => {
         p2dots5000 = p2dots;
-        bindData(p2dots5000, 'part2');
     });
 
 d3.csv('clustered_crime_data_p1_5000.csv')
     .then((p1dots) => {
         p1dots5000 = p1dots;
-        bindData(p1dots5000, 'part1');
     });
 
 d3.csv('cleaned_crime_data.csv')
     .then((data) => {
         crimeAll = data;
-        // console.log(geoJson);
-        // ctx.beginPath();
-        // ctx.strokeStyle = '#00ACAB';
-        // ctx.globalAlpha = 0.2;
-        // geoPathGenerator(geoJson);
-        // ctx.stroke();
     });
 
 /* make dummy DOM elements to make manipulation of points simpler */
@@ -168,6 +158,7 @@ const drawMap = (geoJson) => {
     })
 }
 
+/* attach zoom event handler to canvas */
 d3.select(ctx.canvas)
     .call(d3.zoom()
         .scaleExtent([1, 10])
@@ -177,6 +168,7 @@ d3.select(ctx.canvas)
         .on("end", () => zoomEnd(d3.event.transform))
     );
 
+/* set d3 zoom parameters */
 const zoomTransform = (transform) => {
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -186,6 +178,7 @@ const zoomTransform = (transform) => {
     ctx.restore();
 }
 
+/* define behavior after zoom transformation is complete */
 const zoomEnd = (transform) => {
     ctx.save();
     console.log(transform.k);
@@ -193,12 +186,25 @@ const zoomEnd = (transform) => {
     ctx.translate(transform.x, transform.y);
     ctx.scale(transform.k, transform.k);
     drawMap(geoJsonMap);
-    if (transform.k < 10) {
+    /* for each transformation, exit out previous datapoints since they've
+       been drawn in a different location on screen. Exit out data points
+       at other data resolutions as well */
+    if (transform.k <= 3) {
+        exitData(p1dots5000, 'part1');
+        exitData(p2dots5000, 'part2');
         exitData(p1dots1000, 'part1');
         bindData(p1dots1000, 'part1');
         exitData(p2dots1000, 'part2');
         bindData(p2dots1000, 'part2');
+    } else if (transform.k < 10) {
+        exitData(p1dots1000, 'part1');
+        exitData(p2dots1000, 'part2');
+        exitData(p1dots5000, 'part1');
+        exitData(p2dots5000, 'part2');
+        bindData(p1dots5000, 'part1');
+        bindData(p2dots5000, 'part2');
     } else {
+        /* filter 300k+ point dataset with visible bounding box of canvas */
         const topLeft = projection.invert(transform.invert([canvas.width,canvas.height]));
         const bottomRight = projection.invert(transform.invert([0,0]));
         bindData(crimeAll.filter((crime) => {
