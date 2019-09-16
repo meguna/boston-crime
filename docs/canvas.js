@@ -136,24 +136,34 @@ const drawMap = (geoJson) => {
     /* draw labels */
     geoJson.features.forEach((place) => {
         const points = geoPathGenerator.centroid(place);
-        ctx.font = "10px Helvetica";
+
+        points[0] -= 30;
+        /* for some specific places, shift label location for legibility */
+        if (place.properties['Name'].toUpperCase() == 'BAY VILLAGE') {
+            points[1] += 12; //y
+            points[0] -= 5; //x
+        } else if (place.properties['Name'].toUpperCase() == 'CHINATOWN') {
+            points[1] += 3; //y
+            points[0] += 20; //x
+        }
+        ctx.font = "10px Brown";
         ctx.fillStyle = 'black';
         let text = '';
         if (place.properties['TOWN'] === 'BOSTON') {
-            text = place.properties['Name'];
+            text = place.properties['Name'].toUpperCase();
         }
         /* label boston neighborhoods */
         ctx.fillStyle = 'black';
-        ctx.font = "10px Helvetica";
+        ctx.font = "10px Brown";
         ctx.fillText(text, points[0], points [1]);
 
         /* label surrounding MA towns */
         text = '';
-        if (place.properties['TOWN'] !== 'BOSTON') {
+        if (place.properties['Name'] === '') {
             text = place.properties['TOWN'];
         }
         ctx.fillStyle = 'gray';
-        ctx.font = "8px Helvetica";
+        ctx.font = "8px Brown";
         ctx.fillText(text, points[0], points [1]);
     })
 }
