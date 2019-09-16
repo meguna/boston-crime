@@ -1,6 +1,7 @@
+"use strict";
 
 /* initialize canvas */
-canvas = document.getElementById('main');
+const canvas = document.getElementById('main');
 const dpr = window.devicePixelRatio || 1;
 const rect = canvas.getBoundingClientRect();
 canvas.width = rect.width * dpr;
@@ -11,6 +12,9 @@ ctx.scale(dpr, dpr);
 /* variables to hold data loaded with fetch calls */
 let geoJsonMap = {}, p1dots1000 = {}, p2dots1000 = {}, crimeAll = {},
     p1dots5000 = {}, p2dots5000 = {};
+
+/* zoom level */
+let zoomLevel = 1;
 
 /* dummy DOM nodes used to listen for changes */
 const detachedContainer = document.createElement('custom');
@@ -29,7 +33,14 @@ const geoPathGenerator = d3
   .pointRadius(3)
   .context(ctx);
 
+/* initalize quad tree for search - before loading crime csv */
+const quadtree = d3.quadtree()
+    .extent([[0, 0], [canvas.width, canvas.height]])
+    .x((d) => projection([+d['Long'], +d['Lat']])[0])
+    .y((d) => projection([+d['Long'], +d['Lat']])[1]);
+
 /* load json files */
+
 d3.json('mabosclipped.json')
     .then((geoJson) => {
         geoJsonMap = geoJson;
@@ -61,6 +72,8 @@ d3.csv('clustered_crime_data_p1_5000.csv')
 d3.csv('cleaned_crime_data.csv')
     .then((data) => {
         crimeAll = data;
+        quadtree
+            .addAll(crimeAll);
     });
 
 /* make dummy DOM elements to make manipulation of points simpler */
@@ -72,7 +85,11 @@ const bindData = (data, part) => {
         .append('custom')
         .classed(part, true);
 
-    drawDots(part);
+    if (part !== 'part3') {
+        drawDots(part);
+    } else {
+        drawDots3000(part);
+    }
 }
 
 const exitData = (data, part) => {
@@ -80,6 +97,7 @@ const exitData = (data, part) => {
         .remove();
 }
 
+/* draw low resolution data points */
 const drawDots = (ucrPart) => {
     const elements = dataContainer.selectAll(`custom.${ucrPart}`);
     elements.each((d) => {
@@ -98,6 +116,31 @@ const drawDots = (ucrPart) => {
     })
 }
 
+/* draw method specifically for highest resolution data */
+const drawDots3000 = () => {
+    const elements = dataContainer.selectAll(`custom.part3`);
+    elements.each((d) => {
+        const node = d3.select(this);
+        ctx.globalAlpha = 0.1;
+        ctx.beginPath();
+        const coords = projection([+d['Long'],+d['Lat']]);
+        /* add 1-5 pixels worth of jitter to the dots,
+           since many are on exactly the same point */
+        const jitter = (Math.random() * 5) + 1;
+        const x = coords[0] + (Math.random() * jitter);
+        const y = coords[1] + (Math.random() * jitter);
+        const r = 0.5;
+        ctx.arc(x, y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = (d['UCR_PART'] === 'Part One') ? '#E8FF00' : '#00CBA6';
+        ctx.lineWidth = 0.1;
+        ctx.strokeStyle = (d['UCR_PART'] === 'Part One') ? '#D8EC00' : '#00AC8C';
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+    })
+}
+
+/* draw base map */
 const drawMap = (geoJson) => {
     /* draw ocean */
     ctx.globalAlpha = 1;
@@ -171,9 +214,10 @@ const drawMap = (geoJson) => {
 /* attach zoom event handler to canvas */
 d3.select(ctx.canvas)
     .call(d3.zoom()
-        .scaleExtent([1, 10])
+        .scaleExtent([1, 15])
         .extent([[0, 0],[canvas.width, canvas.height]])
         .translateExtent([[0, 0],[canvas.width, canvas.height]])
+        .clickDistance([canvas.width, canvas.height])
         .on("zoom", () => zoomTransform(d3.event.transform))
         .on("end", () => zoomEnd(d3.event.transform))
     );
@@ -191,7 +235,7 @@ const zoomTransform = (transform) => {
 /* define behavior after zoom transformation is complete */
 const zoomEnd = (transform) => {
     ctx.save();
-    console.log(transform.k);
+    zoomLevel = transform.k;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.translate(transform.x, transform.y);
     ctx.scale(transform.k, transform.k);
@@ -199,13 +243,16 @@ const zoomEnd = (transform) => {
     /* for each transformation, exit out previous datapoints since they've
        been drawn in a different location on screen. Exit out data points
        at other data resolutions as well */
-    if (transform.k <= 3) {
+    if (transform.k < 3) {
         exitData(p1dots5000, 'part1');
         exitData(p2dots5000, 'part2');
         exitData(p1dots1000, 'part1');
         bindData(p1dots1000, 'part1');
         exitData(p2dots1000, 'part2');
         bindData(p2dots1000, 'part2');
+        exitData(crimeAll, 'part3');
+
+        d3.select('#main').on("click", null);
     } else if (transform.k < 10) {
         exitData(p1dots1000, 'part1');
         exitData(p2dots1000, 'part2');
@@ -213,7 +260,11 @@ const zoomEnd = (transform) => {
         exitData(p2dots5000, 'part2');
         bindData(p1dots5000, 'part1');
         bindData(p2dots5000, 'part2');
+        exitData(crimeAll, 'part3');
+
+        d3.select('#main').on("click", null);
     } else {
+        exitData(crimeAll, 'part3');
         /* filter 300k+ point dataset with visible bounding box of canvas */
         const topLeft = projection.invert(transform.invert([canvas.width,canvas.height]));
         const bottomRight = projection.invert(transform.invert([0,0]));
@@ -223,6 +274,18 @@ const zoomEnd = (transform) => {
             (+crime['Long'] < topLeft[0]) &&
             (+crime['Long'] > bottomRight[0]);
         }), 'part3');
+
+        /* when clicked, search quadtree for data point nearest to click loc */
+        d3.select('#main').on("click", function() {
+            const m = d3.mouse(this);
+            const p = quadtree.find(m[0], m[1]);
+            console.log(p);
+        });
     }
     ctx.restore();
 }
+
+/* toggle legend */
+
+
+

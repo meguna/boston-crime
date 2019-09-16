@@ -30,6 +30,8 @@ canvas {
 	width: 30vw;
 	padding: 50px;
 	line-height: 1.5rem;
+	transition: 0.5s;
+	overflow-y: scroll;
 }
 
 .legend a {
@@ -42,9 +44,15 @@ canvas {
 	display: inline-block;
 	border-radius: 5px;
 }
+
 .sample-yellow {
 	background-color: #E8FF00;
 }
+
 .sample-green {
 	background-color: #00CBA6;
+}
+
+.map-button {
+	font-size: 1.2rem;
 }
