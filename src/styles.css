@@ -12,6 +12,35 @@
 	background-color: #1E4589;
 	color: white;
 	font-size: 2rem;
-	position: fixed;
+	position: absolute;
 	width: 100%;
+}
+.legend {
+	background-color: #1E4589;
+	opacity: 0.8;
+	font-family: 'Brown';
+	position: absolute;
+	right: 0;
+	top: 150px;
+	color: white;
+	width: 30vw;
+	padding: 50px;
+	line-height: 1.5rem;
+}
+
+.legend a {
+	color: white;
+}
+
+.leg-box {
+	width: 10px;
+	height: 10px;
+	display: inline-block;
+	border-radius: 5px;
+}
+.sample-yellow {
+	background-color: #E8FF00;
+}
+.sample-green {
+	background-color: #00CBA6;
 }

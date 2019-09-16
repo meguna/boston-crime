@@ -9,7 +9,8 @@ const ctx = canvas.getContext('2d');
 ctx.scale(dpr, dpr);
 
 /* variables to hold data loaded with fetch calls */
-let geoJsonMap = {}, p1dots1000 = {}, p2dots1000 = {}, crimeAll = {};
+let geoJsonMap = {}, p1dots1000 = {}, p2dots1000 = {}, crimeAll = {},
+    p1dots5000 = {}, p2dots5000 = {};
 
 /* dummy DOM nodes used to listen for changes */
 const detachedContainer = document.createElement('custom');
@@ -47,6 +48,18 @@ d3.csv('clustered_crime_data_p1_1000.csv')
     .then((p1dots) => {
         p1dots1000 = p1dots;
         bindData(p1dots1000, 'part1');
+    });
+
+d3.csv('clustered_crime_data_p2_5000.csv')
+    .then((p2dots) => {
+        p2dots5000 = p2dots;
+        bindData(p2dots5000, 'part2');
+    });
+
+d3.csv('clustered_crime_data_p1_5000.csv')
+    .then((p1dots) => {
+        p1dots5000 = p1dots;
+        bindData(p1dots5000, 'part1');
     });
 
 d3.csv('cleaned_crime_data.csv')
