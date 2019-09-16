@@ -40,6 +40,11 @@ del bos['ShapeSTLen']
 ma = ma.to_crs(epsg=4326)
 bos = bos.to_crs(epsg=4326)
 
+# get centroid of 'boston' geometry
+bos['dissolvefield'] = 1
+bos_unit = bos.dissolve(by='dissolvefield')
+del bos['dissolvefield']
+
 # merge
 ma_with_bos = gp.overlay(bos, ma, how='union')
 
@@ -67,4 +72,21 @@ ma_with_bos = ma_with_bos.rename(columns={'name': 'bosSubNb'})
 
 print(ma_with_bos.head(20))
 
-ma_with_bos.to_file('./out/mabos.shp')
+#clip to a reasonable bounding box around 'boston' shape
+xmin, ymin, xmax, ymax = bos.total_bounds
+X_BUFFER = 0.15
+Y_BUFFER = 0.08
+xmin -= X_BUFFER
+ymin -= Y_BUFFER
+xmax += X_BUFFER
+ymax += Y_BUFFER
+ma_with_bos = ma_with_bos.cx[xmin:xmax, ymin:ymax]
+
+ma_with_bos.to_file('./test/mabosclipped.shp')
+# ma_with_bos.to_file('./out/mabos.shp')
+
+# notes: after export
+
+# upload resulting shapefiles to mapshaper.org
+# simplify (method = Visvalingam/weighted, 5%)
+# export as GeoJSON
