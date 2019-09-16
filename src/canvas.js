@@ -1,21 +1,15 @@
 
 /* initialize canvas */
-const setupCanvas = (canvas) => {
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-}
+canvas = document.getElementById('main');
+const dpr = window.devicePixelRatio || 1;
+const rect = canvas.getBoundingClientRect();
+canvas.width = rect.width * dpr;
+canvas.height = rect.height * dpr;
+const ctx = canvas.getContext('2d');
+ctx.scale(dpr, dpr);
 
 /* variables to hold data loaded with fetch calls */
 let geoJsonMap = {}, p1dots1000 = {}, p2dots1000 = {}, crimeAll = {};
-
-setupCanvas(document.getElementById('main'));
-
-const canvas = document.getElementById('main');
-const ctx = canvas.getContext('2d', { alpha: false });
 
 /* dummy DOM nodes used to listen for changes */
 const detachedContainer = document.createElement('custom');
@@ -96,23 +90,24 @@ const drawDots = (ucrPart) => {
         ctx.arc(x, y, r, 0, 2 * Math.PI);
         ctx.fillStyle = (ucrPart === 'part1') ? '#E8FF00' : '#00CBA6';
         ctx.fillStyle = (ucrPart === 'part3') ? '#FF00CF' : ctx.fillStyle;
-        // ctx.strokeStyle = (ucrPart === 'part1') ? '#DAD700' : '#00B695';
         ctx.fill();
-        // ctx.stroke();
         ctx.closePath();
     })
 }
 
 const drawMap = (geoJson) => {
+    /* draw ocean */
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#B3C9CC';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    /* draw outer MA */
     ctx.fillStyle = '#C9E6E0';
     ctx.beginPath();
     geoPathGenerator(geoJson);
     ctx.fill();
 
+    /* draw boston */
     const boston = geoJson.features.filter((feature) => {
         return feature.properties.TOWN === 'BOSTON';
     })
@@ -125,6 +120,7 @@ const drawMap = (geoJson) => {
     geoPathGenerator(bostonCollec);
     ctx.fill();
 
+    /* draw borders */
     ctx.beginPath();
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1.5;
@@ -132,6 +128,31 @@ const drawMap = (geoJson) => {
     ctx.lineCap = 'round';
     geoPathGenerator(geoJson);
     ctx.stroke();
+
+
+    /* draw labels */
+    geoJson.features.forEach((place) => {
+        const points = geoPathGenerator.centroid(place);
+        ctx.font = "10px Helvetica";
+        ctx.fillStyle = 'black';
+        let text = '';
+        if (place.properties['TOWN'] === 'BOSTON') {
+            text = place.properties['Name'];
+        }
+        /* label boston neighborhoods */
+        ctx.fillStyle = 'black';
+        ctx.font = "10px Helvetica";
+        ctx.fillText(text, points[0], points [1]);
+
+        /* label surrounding MA towns */
+        text = '';
+        if (place.properties['TOWN'] !== 'BOSTON') {
+            text = place.properties['TOWN'];
+        }
+        ctx.fillStyle = 'gray';
+        ctx.font = "8px Helvetica";
+        ctx.fillText(text, points[0], points [1]);
+    })
 }
 
 d3.select(ctx.canvas)
