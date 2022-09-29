@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "dependencies": {
-    "d3": "^5.12.0",
+    "d3": "^7.6.1",
     "lodash": "^4.17.15",
     "shapefile": "^0.6.6"
   },
